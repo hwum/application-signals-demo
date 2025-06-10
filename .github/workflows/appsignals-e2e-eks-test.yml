@@ -21,8 +21,8 @@ env:
   TEST_RESOURCES_FOLDER: e2e-test-resources
   TEST_ACCOUNT: ${{ secrets.APP_SIGNALS_E2E_TEST_ACC }}
   SAMPLE_APP_NAMESPACE: sample-app-namespace
-  SAMPLE_APP_FRONTEND_SERVICE_IMAGE: ${{ secrets.APP_SIGNALS_E2E_FE_SA_IMG }}
-  SAMPLE_APP_REMOTE_SERVICE_IMAGE: ${{ secrets.APP_SIGNALS_E2E_RE_SA_IMG }}
+  SAMPLE_APP_FRONTEND_SERVICE_IMAGE: public.ecr.aws/aws-observability/sample-app:latest
+  SAMPLE_APP_REMOTE_SERVICE_IMAGE: public.ecr.aws/aws-observability/sample-remote-app:latest
   METRIC_NAMESPACE: AppSignals
   LOG_GROUP_NAME: /aws/appsignals/eks
 

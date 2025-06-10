@@ -5,7 +5,7 @@ set -euo pipefail
 # Variables
 BUILDER_CONFIG="builder-config.yaml"
 OCB_BINARY="ocb"
-OCB_URL="https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.111.0/ocb_0.111.0_linux_amd64"
+OCB_URL="https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.111.0/ocb_0.111.0_darwin_arm64"
 
 # Ensure the script is running in the correct directory
 if [[ ! -f "${BUILDER_CONFIG}" ]]; then

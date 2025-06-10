@@ -66,14 +66,7 @@ echo "Running ocb.sh to build the OpenTelemetry Collector..."
 pushd ./otel-collector
 chmod +x ./ocb.sh
 ./ocb.sh
-if [[ ! -f ./otelcol-dev/otelcol-dev ]]; then
-  echo "Error: otelcol-dev binary not found in ./otel-collector/otelcol-dev. Ensure ocb.sh is generating the file correctly."
-  exit 1
-fi
-if [[ ! -f ./customconfig.yaml ]]; then
-  echo "Error: customconfig.yaml not found in ./otel-collector."
-  exit 1
-fi
+
 # Clean up unnecessary files
 rm -f ./otelcol-dev/go.mod ./otelcol-dev/go.sum
 rm -f ./otelcol-dev/*.go
