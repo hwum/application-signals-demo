@@ -3,6 +3,9 @@ name: Deploy to EKS
 on:
   push:
     branches:
+      - "**"
+  pull_request:
+    branches:
       - main
   workflow_dispatch:
 
@@ -75,4 +78,4 @@ jobs:
       run: |
         cd scripts/eks/appsignals
         chmod +x ./setup-eks-demo.sh
-        ./setup-eks-demo.sh --region=us-east-1 --skip-slo=true
+        ./setup-eks-demo.sh --region=us-west-2 --skip-slo=true

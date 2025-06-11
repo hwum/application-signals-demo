@@ -25,6 +25,10 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
+  datasource:
+    url: jdbc:mysql://non-existent-mysql-host:3306/petclinic?useSSL=false
+    username: invalid-user
+    password: invalid-password
 
 ---
 # Prod profile
