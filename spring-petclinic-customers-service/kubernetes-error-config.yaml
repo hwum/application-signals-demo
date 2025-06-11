@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customers-service-error-config
+  namespace: spring-petclinic
+data:
+  application.properties: |
+    # This will cause the service to fail when deployed to Kubernetes
+    spring.datasource.url=jdbc:mysql://non-existent-db:3306/petclinic
+    spring.datasource.username=invalid-user
+    spring.datasource.password=invalid-password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customers-service
+  namespace: spring-petclinic
+spec:
+  selector:
+    matchLabels:
+      app: customers-service
+  template:
+    metadata:
+      labels:
+        app: customers-service
+    spec:
+      containers:
+      - name: customers-service
+        image: ${CUSTOMERS_SERVICE_IMAGE}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ERROR_TRIGGER
+          value: "true"
+        volumeMounts:
+        - name: error-config
+          mountPath: /application/config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: error-config
+        configMap:
+          name: customers-service-error-config

@@ -25,14 +25,6 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
-  cloud:
-    kubernetes:
-      config:
-        required: true
-      secrets:
-        required: true
-        paths:
-          - /non-existent-secret-path
 
 ---
 # Prod profile
