@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Script to synthesize, deploy, or destroy AWS CDK stacks with stack dependencies
-# Usage: ./cdk-deploy.sh <action>
-# Example for deploy: ./cdk-deploy.sh deploy
+# Usage: ./cdk-deploy.sh <action> <use-otlp> <skip-slo>
+# Example for deploy: ./cdk-deploy.sh deploy false false
 # Example for destroy: ./cdk-deploy.sh destroy
 # Example to only synth: ./cdk-deploy.sh synth
 
 ACTION=$1
 USE_OTLP=${2:-false}  # Default value is false
+SKIP_SLO=${3:-true}   # Default to skip SLO creation
 
 # Check for action parameter
 if [[ -z "$ACTION" ]]; then
@@ -59,14 +60,20 @@ if [[ "$ACTION" == "deploy" ]]; then
   if cdk deploy --all --require-approval never; then
     echo "Deployment successful for sample app in EKS Cluster"
 
-    # Once the sample app is deployed, it will take up to 10 minutes for SLO metrics to appear
-    sleep 600
-    if cdk deploy --context enableSlo=True --all --require-approval never; then
-      echo "Synthetic canary and SLO was deployed successfully"
+    # Skip SLO creation if SKIP_SLO is true
+    if [[ "$SKIP_SLO" == "true" ]]; then
+      echo "Skipping SLO creation as requested"
     else
-      echo "Synthetic canary and SLO failed to deploy"
-      cdk destroy --context enableSlo=True --all --force --verbose
-      exit 1
+      # Once the sample app is deployed, it will take up to 10 minutes for SLO metrics to appear
+      echo "Waiting for 10 minutes for SLO metrics to appear..."
+      sleep 600
+      if cdk deploy --context enableSlo=True --all --require-approval never; then
+        echo "Synthetic canary and SLO was deployed successfully"
+      else
+        echo "Synthetic canary and SLO failed to deploy"
+        cdk destroy --context enableSlo=True --all --force --verbose
+        exit 1
+      fi
     fi
   else
     echo "Deployment failed. Attempting to clean up resources by destroying all stacks..."

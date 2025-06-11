@@ -5,6 +5,7 @@ set -ex
 DEFAULT_REGION="us-east-1"
 OPERATION="create"
 USE_OTLP="false"  # Default value for OTLP
+SKIP_SLO="true"   # Skip SLO creation by default
 
 # Read command line arguments
 for i in "$@"; do
@@ -19,6 +20,10 @@ for i in "$@"; do
     ;;
   --use-otlp=*)
     USE_OTLP="${i#*=}"
+    shift
+    ;;
+  --skip-slo=*)
+    SKIP_SLO="${i#*=}"
     shift
     ;;
   *)
@@ -36,7 +41,7 @@ function run_cdk() {
   echo "Running CDK..."
   # jump to the cdk folder, run the cdk commands, and then jump back to current folder
   pushd ../../../cdk/eks >/dev/null
-  ./eks-cdk.sh $1 $USE_OTLP
+  ./eks-cdk.sh $1 $USE_OTLP $SKIP_SLO
   popd >/dev/null
 }
 
