@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+export ACCOUNT=388276022184
+export REGION=us-west-2
 export REPOSITORY_PREFIX=${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com
 
 aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${REPOSITORY_PREFIX}
