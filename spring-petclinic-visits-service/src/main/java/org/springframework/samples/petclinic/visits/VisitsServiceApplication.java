@@ -15,6 +15,9 @@
  */
 package org.springframework.samples.petclinic.visits;
 
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -30,5 +33,20 @@ public class VisitsServiceApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(VisitsServiceApplication.class, args);
+    }
+
+    // This interface doesn't exist, which will cause a startup failure
+    @Autowired
+    private NonExistentService nonExistentService;
+
+    @PostConstruct
+    public void init() {
+        // Throw exception during startup
+        throw new RuntimeException("Service failed to initialize");
+    }
+
+    // Define the interface to avoid compilation errors
+    public interface NonExistentService {
+        void doSomething();
     }
 }

@@ -3,10 +3,10 @@ import { Construct } from 'constructs';
 import { StackProps, Stack, CfnJson, Fn, CfnWaitConditionHandle, CfnWaitCondition } from 'aws-cdk-lib';
 import { Vpc, InstanceType, ISecurityGroup,SecurityGroup, Port } from 'aws-cdk-lib/aws-ec2';
 import { Role, RoleProps, PolicyStatement, FederatedPrincipal, Effect } from 'aws-cdk-lib/aws-iam';
-import { CfnAddon, Cluster, KubernetesManifest, KubernetesVersion, ServiceAccount, KubernetesObjectValue, Nodegroup } from 'aws-cdk-lib/aws-eks';
+import { CfnAddon, Cluster, KubernetesManifest, KubernetesVersion, ServiceAccount, KubernetesObjectValue, Nodegroup, NodegroupAmiType, CapacityType, TaintEffect } from 'aws-cdk-lib/aws-eks';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { KubectlV31Layer } from '@aws-cdk/lambda-layer-kubectl-v31';
-
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { readYamlFile, getYamlFiles, transformNameToId, transformYaml } from '../utils/utils';
 
 interface EksStackProps extends StackProps {
@@ -105,7 +105,7 @@ export class EksStack extends Stack {
     this.deployManifests(this.mongodbManifestPath, [this.ebsCsiDriverAddon, this.visitsServiceServiceAccount, this.otelCollectorServiceServiceAccount ]);
     // Deploy the sample app.
     this.deployManifests(this.sampleAppManifestPath, [this.visitsServiceServiceAccount, this.otelCollectorServiceServiceAccount ]);
-    // Deploy the ngnix ingress. 
+    // Deploy the ngnix ingress.
     this.nginxIngressManifests = this.deployManifests(this.nginxIngressManifestPath, [this.nginxIngressNamespace]);
     // Get the ingress external ip
     this.ingressExternalIp = this.getIngressExternalIp();
@@ -115,7 +115,7 @@ export class EksStack extends Stack {
 
   createEksCluster(awsApplicationTag: string) {
     const cluster = new Cluster(this, 'EKSCluster', {
-      clusterName: this.CLUSTER_NAME, 
+      clusterName: this.CLUSTER_NAME,
       version: this.clusterKubernetesVersion,
       mastersRole: this.eksClusterRole,
       vpc: this.vpc,
@@ -133,14 +133,40 @@ export class EksStack extends Stack {
 
     // Need at least 3 nodes to support all the pods for the sample app. Alternative is to upgrade the instance type
     // that can support more pods at once
-    cluster.addNodegroupCapacity('SampleAppNodeGroup', {
+    const nodeGroup = cluster.addNodegroupCapacity('SampleAppNodeGroup', {
       nodeRole: this.eksNodeGroupRole,
+      nodegroupName: 'my-managed-nodegroup',
       instanceTypes: [
-        new InstanceType('m5.large'),
+        new InstanceType('m3.large'),
       ],
-      minSize: 3, 
-      maxSize: 5,
+      minSize: 1,
+      maxSize: 3,
+      desiredSize: 2,
       releaseVersion: nodeGroupAmiReleaseVersion,
+      // Fix EC2 integration issues
+      amiType:NodegroupAmiType.AL2_X86_64,
+      capacityType: CapacityType.ON_DEMAND,
+      // Node configuration
+      labels: {
+        'environment': 'production',
+        'team': 'backend'
+      },
+      taints: [
+        {
+          key: 'dedicated',
+          value: 'backend',
+          effect: TaintEffect.NO_SCHEDULE
+        }
+      ],
+      tags: {
+        'Name': 'eks-managed-node',
+        'Environment': 'production'
+      },
+      // Subnets for nodes
+      subnets: this.vpc.selectSubnets({
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      }),
+
     });
 
     this.rdsSecurityGroup.addIngressRule(
@@ -155,10 +181,10 @@ export class EksStack extends Stack {
     this.addFederatedPrincipal(this.ebsCsiDriverAddonRole, 'EbsCsiDriverAddonRole', false);
 
     const addon = new CfnAddon(this, 'ebsCsiAddon', {
-      addonName: 'aws-ebs-csi-driver', 
+      addonName: 'aws-ebs-csi-driver',
       clusterName: this.cluster.clusterName,
-      serviceAccountRoleArn: this.ebsCsiDriverAddonRole.roleArn, 
-      resolveConflicts: 'OVERWRITE', 
+      serviceAccountRoleArn: this.ebsCsiDriverAddonRole.roleArn,
+      resolveConflicts: 'OVERWRITE',
     });
     return addon;
   }
@@ -216,10 +242,10 @@ export class EksStack extends Stack {
       dependencies.forEach((dependnecy) => {
         manifest.node.addDependency(dependnecy);
       })
-      // Make sure that the cloudwatch addon exists already so that the services are discoverable  
+      // Make sure that the cloudwatch addon exists already so that the services are discoverable
       // without restarting the pods
       manifest.node.addDependency(this.cloudwatchAddon);
-      
+
       manifests.push(manifest);
     })
 
@@ -232,11 +258,11 @@ export class EksStack extends Stack {
       objectType: 'service',
       objectName: 'ingress-nginx',
       objectNamespace: 'ingress-nginx',
-      jsonPath: '.status.loadBalancer.ingress[0].hostname', 
+      jsonPath: '.status.loadBalancer.ingress[0].hostname',
     });
 
     ingressIp.node.addDependency(...this.nginxIngressManifests);
-  
+
     return ingressIp;
   }
 
@@ -257,7 +283,7 @@ export class EksStack extends Stack {
       },
       'sts:AssumeRoleWithWebIdentity'
     )
-  
+
     role.assumeRolePolicy?.addStatements(
       new PolicyStatement({
         effect: Effect.ALLOW,
@@ -283,7 +309,7 @@ export class EksStack extends Stack {
       },
       'sts:AssumeRoleWithWebIdentity'
     )
-  
+
     this.cloudwatchAddonRole.assumeRolePolicy?.addStatements(
       new PolicyStatement({
         effect: Effect.ALLOW,
@@ -295,7 +321,7 @@ export class EksStack extends Stack {
     const addon = new CfnAddon(this, 'CloudWatchAddonAddon', {
       addonName: 'amazon-cloudwatch-observability',
       clusterName: this.cluster.clusterName,
-      serviceAccountRoleArn: this.cloudwatchAddonRole.roleArn, 
+      serviceAccountRoleArn: this.cloudwatchAddonRole.roleArn,
       resolveConflicts: 'OVERWRITE',
     });
 

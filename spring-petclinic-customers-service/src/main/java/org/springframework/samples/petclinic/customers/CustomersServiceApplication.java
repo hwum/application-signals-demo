@@ -18,7 +18,9 @@ package org.springframework.samples.petclinic.customers;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import javax.annotation.PostConstruct;
 
 /**
  * @author Maciej Szarlinski
@@ -30,5 +32,14 @@ public class CustomersServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(CustomersServiceApplication.class, args);
+	}
+
+	@Bean
+	public void failInCdk() {
+		if (System.getenv("CDK_DEFAULT_REGION") != null ||
+				System.getenv("AWS_CDK_DEPLOY") != null ||
+				System.getenv("KUBERNETES_SERVICE_HOST") != null) {
+			throw new RuntimeException("Service intentionally failed during CDK deployment");
+		}
 	}
 }
