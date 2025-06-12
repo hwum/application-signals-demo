@@ -18,11 +18,11 @@ spec:
       annotations:
         kompose.cmd: kompose convert -f ../docker-compose-eks.yml
         kompose.version: 1.27.0 (b0ed6a2c9)
-      labels:
-        io.kompose.service: pet-clinic-frontend-java
-      annotations:
         sidecar.opentelemetry.io/inject-java: "true"
         instrumentation.opentelemetry.io/inject-java: "true"
+      labels:
+        io.kompose.service: pet-clinic-frontend-java
+
     spec:
       containers:
         - command:
@@ -39,6 +39,29 @@ spec:
           name: api-gateway-java
           ports:
             - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
           env:
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888

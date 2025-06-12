@@ -8,9 +8,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthController {
 
-  @GetMapping("/actuator/health")
+  @GetMapping("/actuator/health/liveness")
   public ResponseEntity<String> health() {
     // Always return 500 error
     throw new RuntimeException("Health check failed");
+  }
+
+  @GetMapping("/actuator/health/readiness")
+  public ResponseEntity<String> readiness() {
+    // Always return 500 error
+    throw new RuntimeException("Readiness check failed");
   }
 }

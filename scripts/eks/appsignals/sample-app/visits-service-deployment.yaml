@@ -16,13 +16,13 @@ spec:
   template:
     metadata:
       annotations:
+        sidecar.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "true"
         kompose.cmd: kompose convert -f ../docker-compose-eks.yml
         kompose.version: 1.27.0 (b0ed6a2c9)
       labels:
         io.kompose.service: visits-service-java
-      annotations:
-        sidecar.opentelemetry.io/inject-java: "true"
-        instrumentation.opentelemetry.io/inject-java: "true"
+
     spec:
       serviceAccountName: visits-service-account
       containers:
@@ -43,5 +43,28 @@ spec:
           name: visits-service-java
           ports:
             - containerPort: 8082
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
       restartPolicy: Always
 status: {}
